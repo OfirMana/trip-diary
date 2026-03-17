@@ -12,8 +12,8 @@ export async function getStaticPaths() {
 
 const { day } = Astro.props;
 const { Content } = await render(day);
-const base = import.meta.env.BASE_URL;
-const heroSrc = `${base}images/${day.data.hero}`;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const heroSrc = `${base}/images/${day.data.hero}`;
 ---
 
 <BaseLayout title={day.data.title}>
@@ -44,7 +44,7 @@ const heroSrc = `${base}images/${day.data.hero}`;
             <div class="gallery-grid">
               {day.data.gallery.slice(0, 3).map((imgPath) => (
                 <div class="photo">
-                  <img src={`${base}images/${imgPath}`} alt={day.data.title} />
+                  <img src={`${base}/images/${imgPath}`} alt={day.data.title} />
                 </div>
               ))}
             </div>
