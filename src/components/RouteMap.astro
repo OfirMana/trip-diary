@@ -1,0 +1,143 @@
+---
+type Stop = {
+  name: string;
+  lat: number;
+  lng: number;
+  note?: string;
+};
+
+type MapData = {
+  center: {
+    lat: number;
+    lng: number;
+  };
+  zoom?: number;
+  stops?: Stop[];
+};
+
+const { map } = Astro.props as { map: MapData };
+const mapId = `route-map-${Math.random().toString(36).slice(2, 9)}`;
+const mapJson = JSON.stringify(map);
+---
+
+<section class="route-map-section">
+  <div class="section-label">מפת היום</div>
+  <div id={mapId} class="route-map" data-map={mapJson}></div>
+</section>
+
+<script define:vars={{ mapId }}>
+  async function ensureLeaflet() {
+    if (window.L) return;
+
+    await new Promise((resolve, reject) => {
+      const existingCss = document.querySelector('link[data-leaflet-css="true"]');
+      if (!existingCss) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        link.setAttribute('data-leaflet-css', 'true');
+        document.head.appendChild(link);
+      }
+
+      const existingScript = document.querySelector('script[data-leaflet-js="true"]');
+      if (existingScript) {
+        if (window.L) resolve(true);
+        else existingScript.addEventListener('load', () => resolve(true), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.setAttribute('data-leaflet-js', 'true');
+      script.onload = () => resolve(true);
+      script.onerror = reject;
+      document.body.appendChild(script);
+    });
+  }
+
+  async function initMap() {
+    const el = document.getElementById(mapId);
+    if (!el || el.dataset.loaded === 'true') return;
+
+    const raw = el.dataset.map;
+    if (!raw) return;
+
+    const data = JSON.parse(raw);
+
+    await ensureLeaflet();
+
+    const map = window.L.map(el).setView(
+      [data.center.lat, data.center.lng],
+      data.zoom || 8
+    );
+
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const stops = data.stops || [];
+    const latlngs = [];
+
+    stops.forEach((stop, index) => {
+      const marker = window.L.marker([stop.lat, stop.lng]).addTo(map);
+
+      const popup = `
+        <strong>${index + 1}. ${stop.name}</strong>
+        ${stop.note ? `<br>${stop.note}` : ''}
+      `;
+      marker.bindPopup(popup);
+
+      latlngs.push([stop.lat, stop.lng]);
+    });
+
+    if (latlngs.length > 0) {
+      const line = window.L.polyline(latlngs, {
+        weight: 4,
+        opacity: 0.85
+      }).addTo(map);
+
+      if (latlngs.length > 1) {
+        map.fitBounds(line.getBounds(), { padding: [30, 30] });
+      } else {
+        map.setView(latlngs[0], data.zoom || 10);
+      }
+    }
+
+    el.dataset.loaded = 'true';
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+  }
+
+  initMap();
+</script>
+
+<style>
+  .route-map-section {
+    margin-top: 34px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+
+  .route-map {
+    width: 100%;
+    height: 420px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #ddd;
+    margin-top: 16px;
+  }
+
+  .leaflet-container {
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  }
+
+  @media (max-width: 900px) {
+    .route-map {
+      height: 320px;
+    }
+  }
+</style>

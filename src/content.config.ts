@@ -10,8 +10,23 @@ const days = defineCollection({
     summary: z.string(),
     route: z.string().optional(),
     nextStop: z.string().optional(),
-    hero: z.string(),          // לדוגמה: "day-001/hero.jpg"
-    gallery: z.array(z.string()).default([]), // לדוגמה: ["day-001/metro.jpg", ...]
+    hero: z.string(),
+    gallery: z.array(z.string()).default([]),
+    map: z.object({
+      center: z.object({
+        lat: z.number(),
+        lng: z.number(),
+      }),
+      zoom: z.number().optional().default(8),
+      stops: z.array(
+        z.object({
+          name: z.string(),
+          lat: z.number(),
+          lng: z.number(),
+          note: z.string().optional(),
+        })
+      ).default([]),
+    }).optional(),
   }),
 });
 
