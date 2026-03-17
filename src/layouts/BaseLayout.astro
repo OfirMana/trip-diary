@@ -1,0 +1,307 @@
+---
+interface Props {
+  title?: string;
+}
+const { title = 'Trip Diary' } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <style is:global>
+      :root {
+        --bg: #f5efe6;
+        --paper: #fbf8f3;
+        --ink: #26211c;
+        --muted: #73695f;
+        --line: #ddd2c5;
+        --accent: #7b4a39;
+        --deep: #304854;
+        --max: 1080px;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #f6f0e7 0%, #efe7db 100%);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+        line-height: 1.9;
+        text-align: right;
+      }
+
+      a { color: inherit; text-decoration: none; }
+      img { display: block; width: 100%; height: auto; }
+
+      .site-header {
+        width: min(calc(100vw - 34px), var(--max));
+        margin: 22px auto 0;
+        padding: 12px 0 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        font-size: 0.96rem;
+        color: var(--muted);
+      }
+
+      .brand {
+        font-weight: 700;
+        color: var(--deep);
+      }
+
+      .site-nav {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .site-nav a:hover {
+        color: var(--accent);
+      }
+
+      .page {
+        width: min(calc(100vw - 34px), var(--max));
+        margin: 18px auto 64px;
+      }
+
+      .hero {
+        position: relative;
+        border-radius: 28px;
+        overflow: hidden;
+        min-height: 66vh;
+        background: #ddd;
+      }
+
+      .hero img {
+        height: 66vh;
+        object-fit: cover;
+        object-position: center center;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 48%, rgba(0,0,0,0.56) 100%);
+      }
+
+      .hero-copy {
+        position: absolute;
+        inset: auto 0 0 0;
+        z-index: 2;
+        padding: 28px 30px 30px;
+        color: white;
+      }
+
+      .eyebrow {
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        font-size: .9rem;
+        opacity: .9;
+        margin-bottom: 10px;
+        font-weight: 700;
+      }
+
+      h1, h2, h3 {
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.2rem, 4.5vw, 4.1rem);
+        line-height: 1.05;
+      }
+
+      .sub {
+        margin-top: 12px;
+        max-width: 42rem;
+        color: rgba(255,255,255,.94);
+        font-size: 1.05rem;
+      }
+
+      .lead {
+        margin: 30px auto 26px;
+        max-width: 760px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(1.12rem, 2vw, 1.4rem);
+        color: #3a342e;
+      }
+
+      .divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--line) 12%, var(--line) 88%, transparent);
+        margin: 0 0 28px;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 230px;
+        gap: 44px;
+        align-items: start;
+      }
+
+      .story {
+        max-width: 760px;
+      }
+
+      .section-label {
+        color: var(--deep);
+        font-size: .86rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+
+      .story p {
+        margin: 0 0 1.2em;
+        font-size: 1.1rem;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: .98rem;
+        border-right: 1px solid var(--line);
+        padding-right: 18px;
+        position: sticky;
+        top: 18px;
+      }
+
+      .meta-group {
+        margin-bottom: 22px;
+      }
+
+      .meta-title {
+        color: var(--deep);
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: 4px;
+        font-weight: 700;
+        opacity: .85;
+      }
+
+      .meta-value {
+        color: var(--ink);
+      }
+
+      .gallery {
+        margin-top: 34px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+
+      .gallery-grid {
+        direction: ltr;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+          "photo1 photo2"
+          "photo3 photo3";
+        gap: 18px;
+        margin-top: 16px;
+      }
+
+      .gallery-grid > *:nth-child(1) { grid-area: photo1; }
+      .gallery-grid > *:nth-child(2) { grid-area: photo2; }
+      .gallery-grid > *:nth-child(3) { grid-area: photo3; }
+
+      .photo {
+        border-radius: 20px;
+        overflow: hidden;
+        background: #ddd;
+      }
+
+      .gallery-grid > *:nth-child(1) img,
+      .gallery-grid > *:nth-child(2) img {
+        height: 300px;
+        object-fit: cover;
+      }
+
+      .gallery-grid > *:nth-child(3) img {
+        height: 440px;
+        object-fit: cover;
+      }
+
+      .home-list {
+        display: grid;
+        gap: 18px;
+        margin-top: 24px;
+      }
+
+      .day-link {
+        padding: 18px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .day-link h2 {
+        margin: 0 0 8px;
+        font-size: 1.6rem;
+      }
+
+      .day-link .summary {
+        color: var(--muted);
+      }
+
+      .button-like {
+        display: inline-block;
+        padding: 9px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--deep);
+        margin-top: 10px;
+      }
+
+      .button-like:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      @media (max-width: 900px) {
+        .hero, .hero img {
+          min-height: 55vh;
+          height: 55vh;
+        }
+
+        .content {
+          grid-template-columns: 1fr;
+          gap: 26px;
+        }
+
+        .meta {
+          position: static;
+          border-right: 0;
+          border-top: 1px solid var(--line);
+          padding-right: 0;
+          padding-top: 18px;
+        }
+
+        .gallery-grid {
+          grid-template-columns: 1fr;
+          grid-template-areas:
+            "photo1"
+            "photo2"
+            "photo3";
+        }
+
+        .gallery-grid img {
+          height: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="site-nav">
+        <a href={base}>דף הבית</a>
+      </nav>
+      <div class="brand">Trip Diary</div>
+    </header>
+    <slot />
+  </body>
+</html>
