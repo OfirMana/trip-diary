@@ -38,6 +38,7 @@ const heroSrc = `${base}/images/${day.data.hero}`;
       <article class="story">
         <div class="section-label">סיכום היום</div>
         <Content />
+        <p style="color: darkred;">{day.data.map ? 'יש map' : 'אין map'}</p>
         {day.data.map && <RouteMap map={day.data.map} />}
         {day.data.gallery.length > 0 && (
   <section class="gallery">
