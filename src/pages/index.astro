@@ -63,6 +63,16 @@ const chapters = [...chapterMap.entries()].map(([chapterName, chapterEntry]) => 
 
 <BaseLayout title="Trip Diary">
   <main class="page">
+    <section class="home-hero">
+      <div class="home-hero-copy">
+        <div class="eyebrow">יומן משפחתי</div>
+        <h1>חודשיים וחצי של הרפתקה על הכביש</h1>
+        <p class="sub">
+          שלושה פרקים, עשרות ימים והמון רגעים קטנים שנכתבו בזמן אמת כדי שנוכל לחזור אליהם יחד בעתיד.
+        </p>
+      </div>
+    </section>
+
     <section class="home-intro">
       <p class="lead home-lead">
         זה האתר של יומן המסע — בנוי לפי פרקים וחודשים, כך שאפשר להיכנס לכל יום בקלות
@@ -100,6 +110,7 @@ const chapters = [...chapterMap.entries()].map(([chapterName, chapterEntry]) => 
                   </div>
 
                   <h3>{day.data.title}</h3>
+                  {day.data.route && <div class="day-location">{day.data.route}</div>}
                   <p>{day.data.summary}</p>
                 </a>
               ))}
