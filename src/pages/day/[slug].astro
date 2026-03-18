@@ -34,7 +34,7 @@ const heroSrc = `${base}/images/${day.data.hero}`;
           {day.data.chapter ? `${day.data.chapter} · ` : ''}day {tripIndex}
         </div>
         <h1>{day.data.title}</h1>
-        
+        {day.data.route && <p class="sub hero-route">{day.data.route}</p>}
       </div>
     </section>
 
