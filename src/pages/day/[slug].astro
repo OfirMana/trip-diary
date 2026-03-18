@@ -25,7 +25,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const heroSrc = `${base}/images/${day.data.hero}`;
 ---
 
-<BaseLayout title={day.data.title}>
+<BaseLayout title={day.data.title} chapterTheme={day.data.chapterTheme ?? 'default'}>
   <main class="page">
     <section class="hero">
       <img src={heroSrc} alt={day.data.title} />

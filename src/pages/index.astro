@@ -21,23 +21,28 @@ const shortDateFormatter = new Intl.DateTimeFormat('he-IL', {
 const normalizedDays = allDays.map((day, index) => {
   const dateObj = new Date(day.data.date);
   return {
-    ...day,
-    tripIndex: index + 1,
-    chapter: day.data.chapter ?? 'General',
-    monthKey: `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`,
-    monthLabel: monthFormatter.format(dateObj),
-    shortDate: shortDateFormatter.format(dateObj),
-  };
+  ...day,
+  tripIndex: index + 1,
+  chapter: day.data.chapter ?? 'General',
+  theme: day.data.chapterTheme ?? 'default',
+  monthKey: `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`,
+  monthLabel: monthFormatter.format(dateObj),
+  shortDate: shortDateFormatter.format(dateObj),
+};
 });
 
 const chapterMap = new Map();
 
 for (const day of normalizedDays) {
   if (!chapterMap.has(day.chapter)) {
-    chapterMap.set(day.chapter, new Map());
-  }
+  chapterMap.set(day.chapter, {
+    theme: day.theme,
+    months: new Map(),
+  });
+}
 
-  const months = chapterMap.get(day.chapter);
+const chapterEntry = chapterMap.get(day.chapter);
+const months = chapterEntry.months;
 
   if (!months.has(day.monthKey)) {
     months.set(day.monthKey, {
@@ -49,9 +54,10 @@ for (const day of normalizedDays) {
   months.get(day.monthKey).days.push(day);
 }
 
-const chapters = [...chapterMap.entries()].map(([chapterName, months]) => ({
+const chapters = [...chapterMap.entries()].map(([chapterName, chapterEntry]) => ({
   chapterName,
-  months: [...months.values()],
+  theme: chapterEntry.theme,
+  months: [...chapterEntry.months.values()],
 }));
 ---
 
@@ -74,9 +80,9 @@ const chapters = [...chapterMap.entries()].map(([chapterName, months]) => ({
 
     {chapters.map((chapter) => (
       <section
-        class="chapter-section"
-        id={chapter.chapterName.replace(/\s+/g, '-')}
-      >
+  class={`chapter-section chapter-theme-${chapter.theme}`}
+  id={chapter.chapterName.replace(/\s+/g, '-')}
+>
         <div class="chapter-header">
           <h2>{chapter.chapterName}</h2>
         </div>

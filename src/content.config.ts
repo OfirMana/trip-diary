@@ -8,6 +8,7 @@ const days = defineCollection({
     title: z.string(),
     date: z.string(),
     chapter: z.string().optional(),
+    chapterTheme: z.enum(['iceland', 'norway', 'eu']).optional(),
     summary: z.string(),
     route: z.string().optional(),
     nextStop: z.string().optional(),
