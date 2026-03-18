@@ -1,17 +1,25 @@
 ---
-import RouteMap from '../../components/RouteMap.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import RouteMap from '../../components/RouteMap.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
-  const days = await getCollection('days');
-  return days.map((day) => ({
+  const days = (await getCollection('days')).sort(
+    (a, b) => new Date(a.data.date).getTime() - new Date(b.data.date).getTime()
+  );
+
+  return days.map((day, index) => ({
     params: { slug: day.id },
-    props: { day },
+    props: {
+      day,
+      prev: index > 0 ? days[index - 1] : null,
+      next: index < days.length - 1 ? days[index + 1] : null,
+      tripIndex: index + 1,
+    },
   }));
 }
 
-const { day } = Astro.props;
+const { day, prev, next, tripIndex } = Astro.props;
 const { Content } = await render(day);
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const heroSrc = `${base}/images/${day.data.hero}`;
@@ -22,7 +30,9 @@ const heroSrc = `${base}/images/${day.data.hero}`;
     <section class="hero">
       <img src={heroSrc} alt={day.data.title} />
       <div class="hero-copy">
-        <div class="eyebrow">summer diary</div>
+        <div class="eyebrow">
+          {day.data.chapter ? `${day.data.chapter} · ` : ''}day {tripIndex}
+        </div>
         <h1>{day.data.title}</h1>
         <div class="sub">{day.data.summary}</div>
       </div>
@@ -36,25 +46,57 @@ const heroSrc = `${base}/images/${day.data.hero}`;
 
     <section class="content">
       <article class="story">
-        <div class="section-label">סיכום היום</div>
+        <div class="section-label">יומן היום</div>
         <Content />
-        <p style="color: darkred;">{day.data.map ? 'יש map' : 'אין map'}</p>
+
         {day.data.map && <RouteMap map={day.data.map} />}
+
         {day.data.gallery.length > 0 && (
-  <section class="gallery">
-    <div class="section-label">תמונות מהיום</div>
-    <div class="gallery-grid">
-      {day.data.gallery.map((imgPath, index) => (
-        <div class={`photo ${index === 0 ? 'photo-large' : ''}`}>
-          <img src={`${base}/images/${imgPath}`} alt={day.data.title} />
-        </div>
-      ))}
-    </div>
-  </section>
-)}
+          <section class="gallery">
+            <div class="section-label">תמונות מהיום</div>
+            <div class="gallery-grid">
+              {day.data.gallery.map((imgPath) => (
+                <div class="photo">
+                  <img src={`${base}/images/${imgPath}`} alt={day.data.title} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <nav class="day-pager" aria-label="ניווט בין ימים">
+          {prev ? (
+            <a class="pager-card" href={`${base}/day/${prev.id}/`}>
+              <span class="pager-label">היום הקודם</span>
+              <strong>{prev.data.title}</strong>
+            </a>
+          ) : (
+            <div class="pager-card pager-card-empty"></div>
+          )}
+
+          <a class="pager-home" href={`${base}/`}>
+            כל הימים
+          </a>
+
+          {next ? (
+            <a class="pager-card" href={`${base}/day/${next.id}/`}>
+              <span class="pager-label">היום הבא</span>
+              <strong>{next.data.title}</strong>
+            </a>
+          ) : (
+            <div class="pager-card pager-card-empty"></div>
+          )}
+        </nav>
       </article>
 
       <aside class="meta">
+        {day.data.chapter && (
+          <div class="meta-group">
+            <div class="meta-title">פרק</div>
+            <div class="meta-value">{day.data.chapter}</div>
+          </div>
+        )}
+
         <div class="meta-group">
           <div class="meta-title">תאריך</div>
           <div class="meta-value">{day.data.date}</div>
@@ -64,13 +106,6 @@ const heroSrc = `${base}/images/${day.data.hero}`;
           <div class="meta-group">
             <div class="meta-title">מסלול</div>
             <div class="meta-value">{day.data.route}</div>
-          </div>
-        )}
-
-        {day.data.nextStop && (
-          <div class="meta-group">
-            <div class="meta-title">התחנה הבאה</div>
-            <div class="meta-value">{day.data.nextStop}</div>
           </div>
         )}
       </aside>

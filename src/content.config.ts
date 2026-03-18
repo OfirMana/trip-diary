@@ -7,6 +7,7 @@ const days = defineCollection({
   schema: z.object({
     title: z.string(),
     date: z.string(),
+    chapter: z.string().optional(),
     summary: z.string(),
     route: z.string().optional(),
     nextStop: z.string().optional(),

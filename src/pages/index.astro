@@ -2,32 +2,105 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
-const days = (await getCollection('days')).sort(
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const allDays = (await getCollection('days')).sort(
   (a, b) => new Date(a.data.date).getTime() - new Date(b.data.date).getTime()
 );
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const monthFormatter = new Intl.DateTimeFormat('he-IL', {
+  month: 'long',
+  year: 'numeric',
+});
+
+const shortDateFormatter = new Intl.DateTimeFormat('he-IL', {
+  day: '2-digit',
+  month: '2-digit',
+});
+
+const normalizedDays = allDays.map((day, index) => {
+  const dateObj = new Date(day.data.date);
+  return {
+    ...day,
+    tripIndex: index + 1,
+    chapter: day.data.chapter ?? 'General',
+    monthKey: `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`,
+    monthLabel: monthFormatter.format(dateObj),
+    shortDate: shortDateFormatter.format(dateObj),
+  };
+});
+
+const chapterMap = new Map();
+
+for (const day of normalizedDays) {
+  if (!chapterMap.has(day.chapter)) {
+    chapterMap.set(day.chapter, new Map());
+  }
+
+  const months = chapterMap.get(day.chapter);
+
+  if (!months.has(day.monthKey)) {
+    months.set(day.monthKey, {
+      label: day.monthLabel,
+      days: [],
+    });
+  }
+
+  months.get(day.monthKey).days.push(day);
+}
+
+const chapters = [...chapterMap.entries()].map(([chapterName, months]) => ({
+  chapterName,
+  months: [...months.values()],
+}));
 ---
 
 <BaseLayout title="Trip Diary">
   <main class="page">
-    <section>
-      <div class="lead" style="max-width: 860px; margin-top: 16px;">
-        זה האתר של יומן המסע. הרעיון פשוט:
-        מעצבים פעם אחת, ואז כל יום נכנס לאותה תבנית.
-        לא בונים 70 עמודים ידנית — מוסיפים 70 קבצי תוכן.
-      </div>
+    <section class="home-intro">
+      <p class="lead home-lead">
+        זה האתר של יומן המסע — בנוי לפי פרקים וחודשים, כך שאפשר להיכנס לכל יום בקלות
+        בלי ללכת לאיבוד בתוך רצף ארוך של עמודים.
+      </p>
 
-      <div class="divider"></div>
-
-      <div class="home-list">
-        {days.map((day, index) => (
-          <a class="day-link" href={`${base}/day/${day.id}/`}>
-            <h2>יום {index + 1} — {day.data.title}</h2>
-            <div class="summary">{day.data.summary}</div>
-            <span class="button-like">ליום המלא</span>
+      <nav class="chapter-nav" aria-label="פרקי המסע">
+        {chapters.map((chapter) => (
+          <a href={`#${chapter.chapterName.replace(/\s+/g, '-')}`} class="chapter-pill">
+            {chapter.chapterName}
           </a>
         ))}
-      </div>
+      </nav>
     </section>
+
+    {chapters.map((chapter) => (
+      <section
+        class="chapter-section"
+        id={chapter.chapterName.replace(/\s+/g, '-')}
+      >
+        <div class="chapter-header">
+          <h2>{chapter.chapterName}</h2>
+        </div>
+
+        {chapter.months.map((month) => (
+          <div class="month-block">
+            <div class="month-title">{month.label}</div>
+
+            <div class="day-grid">
+              {month.days.map((day) => (
+                <a class="day-card" href={`${base}/day/${day.id}/`}>
+                  <div class="day-card-top">
+                    <span class="day-number">יום {day.tripIndex}</span>
+                    <span class="day-date">{day.shortDate}</span>
+                  </div>
+
+                  <h3>{day.data.title}</h3>
+                  <p>{day.data.summary}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+    ))}
   </main>
 </BaseLayout>
