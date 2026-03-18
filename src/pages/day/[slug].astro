@@ -34,13 +34,14 @@ const heroSrc = `${base}/images/${day.data.hero}`;
           {day.data.chapter ? `${day.data.chapter} · ` : ''}day {tripIndex}
         </div>
         <h1>{day.data.title}</h1>
-        <div class="sub">{day.data.summary}</div>
+        
       </div>
     </section>
 
-    <div class="lead">
-      {day.data.summary}
-    </div>
+    <section class="summary-panel">
+  <div class="summary-label">בקצרה</div>
+  <p class="summary-text">{day.data.summary}</p>
+</section>
 
     <div class="divider"></div>
 
