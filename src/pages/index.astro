@@ -4,6 +4,28 @@ import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
+const slugifyChapter = (value) =>
+  value.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, '-');
+
+const chapterCopy = {
+  iceland: {
+    kicker: 'Land of fire & ice',
+    text: 'הכניסה למסע: קרח, רוח, גיאותרמיה, כבישים שחורים ונופים שנראים לא סבירים.',
+  },
+  norway: {
+    kicker: 'Fjords & green light',
+    text: 'מעבר לאווירה ירוקה יותר — פיורדים, גשם, יערות והתרחבות איטית של הדרך.',
+  },
+  eu: {
+    kicker: 'Road mode',
+    text: 'המסע בתנועה: טרמפים, ערים, גבולות, מפגשים וסיפור שהולך ונפתח תוך כדי תזוזה.',
+  },
+  default: {
+    kicker: 'Chapter',
+    text: 'חלק נוסף במסע.',
+  },
+};
+
 const allDays = (await getCollection('days')).sort(
   (a, b) => new Date(a.data.date).getTime() - new Date(b.data.date).getTime()
 );
@@ -21,103 +43,162 @@ const shortDateFormatter = new Intl.DateTimeFormat('he-IL', {
 const normalizedDays = allDays.map((day, index) => {
   const dateObj = new Date(day.data.date);
   return {
-  ...day,
-  tripIndex: index + 1,
-  chapter: day.data.chapter ?? 'General',
-  theme: day.data.chapterTheme ?? 'default',
-  monthKey: `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`,
-  monthLabel: monthFormatter.format(dateObj),
-  shortDate: shortDateFormatter.format(dateObj),
-};
+    ...day,
+    tripIndex: index + 1,
+    chapter: day.data.chapter ?? 'General',
+    theme: day.data.chapterTheme ?? 'default',
+    chapterSlug: slugifyChapter(day.data.chapter ?? 'General'),
+    monthKey: `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`,
+    monthLabel: monthFormatter.format(dateObj),
+    shortDate: shortDateFormatter.format(dateObj),
+  };
 });
 
 const chapterMap = new Map();
+const monthMap = new Map();
 
 for (const day of normalizedDays) {
   if (!chapterMap.has(day.chapter)) {
-  chapterMap.set(day.chapter, {
-    theme: day.theme,
-    months: new Map(),
-  });
-}
+    chapterMap.set(day.chapter, {
+      chapterName: day.chapter,
+      chapterSlug: day.chapterSlug,
+      theme: day.theme,
+      hero: day.data.hero,
+      days: [],
+    });
+  }
 
-const chapterEntry = chapterMap.get(day.chapter);
-const months = chapterEntry.months;
+  chapterMap.get(day.chapter).days.push(day);
 
-  if (!months.has(day.monthKey)) {
-    months.set(day.monthKey, {
+  if (!monthMap.has(day.monthKey)) {
+    monthMap.set(day.monthKey, {
       label: day.monthLabel,
       days: [],
     });
   }
 
-  months.get(day.monthKey).days.push(day);
+  monthMap.get(day.monthKey).days.push(day);
 }
 
-const chapters = [...chapterMap.entries()].map(([chapterName, chapterEntry]) => ({
-  chapterName,
-  theme: chapterEntry.theme,
-  months: [...chapterEntry.months.values()],
-}));
+const chapters = [...chapterMap.values()].map((chapter) => {
+  const firstDay = chapter.days[0];
+  const lastDay = chapter.days[chapter.days.length - 1];
+  const copy = chapterCopy[chapter.theme] ?? chapterCopy.default;
+
+  return {
+    ...chapter,
+    daysCount: chapter.days.length,
+    firstDate: firstDay.shortDate,
+    lastDate: lastDay.shortDate,
+    kicker: copy.kicker,
+    text: copy.text,
+  };
+});
+
+const months = [...monthMap.values()];
+
+const totalDays = normalizedDays.length;
+const startDay = normalizedDays[0];
+const endDay = normalizedDays[normalizedDays.length - 1];
 ---
 
 <BaseLayout title="Trip Diary">
   <main class="page">
-    <section class="home-hero">
-      <div class="home-hero-copy">
-        <div class="eyebrow">יומן משפחתי</div>
-        <h1>חודשיים וחצי של הרפתקה על הכביש</h1>
+    <section class="home-masthead">
+      <div class="home-masthead-copy">
+        <div class="eyebrow">Summer journey journal</div>
+        <h1>יומן מסע חי, מסודר לפי פרקים וימים</h1>
         <p class="sub">
-          שלושה פרקים, עשרות ימים והמון רגעים קטנים שנכתבו בזמן אמת כדי שנוכל לחזור אליהם יחד בעתיד.
+          האתר הזה הוא גם שער למסע וגם ארכיון מסודר שלו — אפשר להיכנס דרך הפרקים,
+          או פשוט לדפדף דרך יומן הימים כולו.
         </p>
+
+        <div class="trip-stats">
+          <div class="trip-stat">
+            <span class="trip-stat-value">{totalDays}</span>
+            <span class="trip-stat-label">ימים</span>
+          </div>
+          <div class="trip-stat">
+            <span class="trip-stat-value">{chapters.length}</span>
+            <span class="trip-stat-label">פרקים</span>
+          </div>
+          <div class="trip-stat">
+            <span class="trip-stat-value">{startDay?.shortDate}</span>
+            <span class="trip-stat-label">התחלה</span>
+          </div>
+          <div class="trip-stat">
+            <span class="trip-stat-value">{endDay?.shortDate}</span>
+            <span class="trip-stat-label">סיום</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-masthead-side">
+        <div class="home-note-card">
+          <div class="section-label">איך נכנסים</div>
+          <p>
+            אפשר להתחיל מפרק שלם ולהיכנס לאווירה, או לקפוץ ישירות ליום מסוים דרך לוח המסע.
+          </p>
+        </div>
       </div>
     </section>
 
-    <section class="home-intro">
-      <p class="lead home-lead">
-        זה האתר של יומן המסע — בנוי לפי פרקים וחודשים, כך שאפשר להיכנס לכל יום בקלות
-        בלי ללכת לאיבוד בתוך רצף ארוך של עמודים.
-      </p>
+    <section class="chapter-gates-section">
+      <div class="section-label">פרקי המסע</div>
 
-      <nav class="chapter-nav" aria-label="פרקי המסע">
+      <div class="chapter-gates">
         {chapters.map((chapter) => (
-          <a href={`#${chapter.chapterName.replace(/\s+/g, '-')}`} class="chapter-pill">
-            {chapter.chapterName}
+          <a
+            class={`chapter-gate gate-theme-${chapter.theme}`}
+            href={`${base}/chapter/${chapter.chapterSlug}/`}
+          >
+            <img
+              src={`${base}/images/${chapter.hero}`}
+              alt={chapter.chapterName}
+            />
+            <div class="chapter-gate-copy">
+              <div class="gate-kicker">{chapter.kicker}</div>
+              <h2>{chapter.chapterName}</h2>
+              <p>{chapter.text}</p>
+
+              <div class="gate-meta">
+                <span>{chapter.daysCount} ימים</span>
+                <span>{chapter.firstDate} → {chapter.lastDate}</span>
+              </div>
+            </div>
           </a>
         ))}
-      </nav>
+      </div>
     </section>
 
-    {chapters.map((chapter) => (
-      <section
-  class={`chapter-section chapter-theme-${chapter.theme}`}
-  id={chapter.chapterName.replace(/\s+/g, '-')}
->
-        <div class="chapter-header">
-          <h2>{chapter.chapterName}</h2>
-        </div>
+    <section class="trip-calendar-section">
+      <div class="section-label">יומן הימים</div>
 
-        {chapter.months.map((month) => (
-          <div class="month-block">
-            <div class="month-title">{month.label}</div>
+      {months.map((month) => (
+        <section class="calendar-month">
+          <div class="calendar-month-title">{month.label}</div>
 
-            <div class="day-grid">
-              {month.days.map((day) => (
-                <a class="day-card" href={`${base}/day/${day.id}/`}>
-                  <div class="day-card-top">
-                    <span class="day-number">יום {day.tripIndex}</span>
-                    <span class="day-date">{day.shortDate}</span>
-                  </div>
+          <div class="calendar-track">
+            {month.days.map((day) => (
+              <a
+                class={`calendar-day calendar-day-${day.theme}`}
+                href={`${base}/day/${day.id}/`}
+              >
+                <span class="calendar-day-top">
+                  <span>יום {day.tripIndex}</span>
+                  <span>{day.shortDate}</span>
+                </span>
 
-                  <h3>{day.data.title}</h3>
-                  {day.data.route && <div class="day-location">{day.data.route}</div>}
-                  <p>{day.data.summary}</p>
-                </a>
-              ))}
-            </div>
+                <strong>{day.data.title}</strong>
+
+                {day.data.chapter && (
+                  <span class="calendar-day-chapter">{day.data.chapter}</span>
+                )}
+              </a>
+            ))}
           </div>
-        ))}
-      </section>
-    ))}
+        </section>
+      ))}
+    </section>
   </main>
 </BaseLayout>

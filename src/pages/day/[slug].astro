@@ -3,6 +3,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import RouteMap from '../../components/RouteMap.astro';
 import { getCollection, render } from 'astro:content';
 
+const slugifyChapter = (value) =>
+  value.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, '-');
+
 export async function getStaticPaths() {
   const days = (await getCollection('days')).sort(
     (a, b) => new Date(a.data.date).getTime() - new Date(b.data.date).getTime()
@@ -23,6 +26,10 @@ const { day, prev, next, tripIndex } = Astro.props;
 const { Content } = await render(day);
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const heroSrc = `${base}/images/${day.data.hero}`;
+
+const chapterHref = day.data.chapter
+  ? `${base}/chapter/${slugifyChapter(day.data.chapter)}/`
+  : null;
 ---
 
 <BaseLayout title={day.data.title} chapterTheme={day.data.chapterTheme ?? 'default'}>
@@ -94,7 +101,11 @@ const heroSrc = `${base}/images/${day.data.hero}`;
         {day.data.chapter && (
           <div class="meta-group">
             <div class="meta-title">פרק</div>
-            <div class="meta-value">{day.data.chapter}</div>
+            <div class="meta-value">
+              <a href={chapterHref} class="chapter-inline-link">
+                {day.data.chapter}
+              </a>
+            </div>
           </div>
         )}
 

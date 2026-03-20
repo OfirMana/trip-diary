@@ -1,0 +1,163 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const slugifyChapter = (value) =>
+  value.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, '-');
+
+const chapterCopy = {
+  iceland: {
+    kicker: 'Land of fire & ice',
+    title: 'נכנסים לאיסלנד',
+    text: 'פרק של כניסה חדה למסע — קרח, כבישים שחורים, גיאותרמיה, אור ארוך ונוף שלא מרגיש אמיתי.',
+  },
+  norway: {
+    kicker: 'Fjords & green light',
+    title: 'נכנסים לנורווגיה',
+    text: 'פרק של מרחבים ירוקים, פיורדים, מזג אוויר מתחלף ותנועה אחרת לגמרי של הדרך.',
+  },
+  eu: {
+    kicker: 'Road mode',
+    title: 'Hitchhiking EU',
+    text: 'כאן המסע הופך להיות תנועה חופשית יותר — טרמפים, גבולות, ערים, מפגשים ואלתור.',
+  },
+  default: {
+    kicker: 'Chapter',
+    title: 'פרק במסע',
+    text: 'עוד פרק בדרך.',
+  },
+};
+
+export async function getStaticPaths() {
+  const allDays = (await getCollection('days')).sort(
+    (a, b) => new Date(a.data.date).getTime() - new Date(b.data.date).getTime()
+  );
+
+  const chapterMap = new Map();
+
+  for (const day of allDays) {
+    const chapterName = day.data.chapter ?? 'General';
+    const chapterSlug = slugifyChapter(chapterName);
+    const theme = day.data.chapterTheme ?? 'default';
+
+    if (!chapterMap.has(chapterSlug)) {
+      chapterMap.set(chapterSlug, {
+        chapterName,
+        chapterSlug,
+        theme,
+        hero: day.data.hero,
+        days: [],
+      });
+    }
+
+    chapterMap.get(chapterSlug).days.push(day);
+  }
+
+  return [...chapterMap.values()].map((chapter) => ({
+    params: { chapter: chapter.chapterSlug },
+    props: { chapter },
+  }));
+}
+
+const { chapter } = Astro.props;
+
+const monthFormatter = new Intl.DateTimeFormat('he-IL', {
+  month: 'long',
+  year: 'numeric',
+});
+
+const shortDateFormatter = new Intl.DateTimeFormat('he-IL', {
+  day: '2-digit',
+  month: '2-digit',
+});
+
+const normalizedDays = chapter.days.map((day, index) => {
+  const dateObj = new Date(day.data.date);
+  return {
+    ...day,
+    tripIndex: index + 1,
+    monthKey: `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`,
+    monthLabel: monthFormatter.format(dateObj),
+    shortDate: shortDateFormatter.format(dateObj),
+  };
+});
+
+const monthMap = new Map();
+
+for (const day of normalizedDays) {
+  if (!monthMap.has(day.monthKey)) {
+    monthMap.set(day.monthKey, {
+      label: day.monthLabel,
+      days: [],
+    });
+  }
+
+  monthMap.get(day.monthKey).days.push(day);
+}
+
+const months = [...monthMap.values()];
+const copy = chapterCopy[chapter.theme] ?? chapterCopy.default;
+const firstDay = normalizedDays[0];
+const lastDay = normalizedDays[normalizedDays.length - 1];
+---
+
+<BaseLayout title={chapter.chapterName} chapterTheme={chapter.theme}>
+  <main class="page">
+    <section class="chapter-hero">
+      <img
+        src={`${base}/images/${chapter.hero}`}
+        alt={chapter.chapterName}
+      />
+      <div class="chapter-hero-copy">
+        <div class="eyebrow">{copy.kicker}</div>
+        <h1>{copy.title}</h1>
+        <p class="sub">{copy.text}</p>
+
+        <div class="chapter-hero-meta">
+          <span>{normalizedDays.length} ימים</span>
+          <span>{firstDay?.shortDate} → {lastDay?.shortDate}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter-layout">
+      <section class="chapter-main">
+        <div class="section-label">כל הימים בפרק</div>
+
+        {months.map((month) => (
+          <div class="month-block">
+            <div class="month-title">{month.label}</div>
+
+            <div class="day-grid">
+              {month.days.map((day) => (
+                <a class="day-card" href={`${base}/day/${day.id}/`}>
+                  <div class="day-card-top">
+                    <span>יום {day.tripIndex}</span>
+                    <span>{day.shortDate}</span>
+                  </div>
+
+                  <h3>{day.data.title}</h3>
+                  {day.data.route && <div class="day-location">{day.data.route}</div>}
+                  <p>{day.data.summary}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <aside class="chapter-side">
+        <div class="chapter-side-card">
+          <div class="section-label">על הפרק</div>
+          <p>{copy.text}</p>
+        </div>
+
+        <a class="chapter-back-link" href={`${base}/`}>
+          חזרה לכל המסע
+        </a>
+      </aside>
+    </section>
+  </main>
+</BaseLayout>
